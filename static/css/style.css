@@ -1,0 +1,27 @@
+
+#chat-box {
+    scroll-behavior: smooth;
+}
+
+/* Prevent button from becoming too small */
+#send-btn {
+    min-width: 80px;
+}
+
+/* Disabled send button */
+#send-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Better mobile experience */
+@media (max-width: 640px) {
+    #chat-form {
+        gap: 8px;
+    }
+
+    #send-btn {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
