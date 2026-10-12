@@ -2,8 +2,10 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from fastapi import FastAPI
 from langchain_chroma import Chroma
 
+app = FastAPI(title="Study Guide Chatbot")
 load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
