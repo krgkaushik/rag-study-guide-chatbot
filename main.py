@@ -47,7 +47,9 @@ class GeminiEmbeddings:
             model="gemini-embedding-001",
             contents=texts,
             config=types.EmbedContentConfig(
-                output_dimensionality=768,
+                # Match the vector dimension already stored in the local
+                # Chroma collection to avoid collection mismatch errors.
+                output_dimensionality=384,
             ),
         )
         return [item.values for item in result.embeddings]
