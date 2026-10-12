@@ -5,7 +5,6 @@ const chatBox = document.getElementById("chat-box");
 const sendBtn = document.getElementById("send-btn");
 
 
-// Add a message bubble to the chat
 function addMessage(text, isUser = false) {
 
     const wrapper = document.createElement("div");
@@ -27,12 +26,10 @@ function addMessage(text, isUser = false) {
     wrapper.appendChild(bubble);
     chatBox.appendChild(wrapper);
 
-    // Auto-scroll to bottom
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 
-// Handle chat form submission
 chatForm.addEventListener("submit", async (e) => {
 
     e.preventDefault();
@@ -44,21 +41,17 @@ chatForm.addEventListener("submit", async (e) => {
     }
 
 
-    // Display user's message
     addMessage(userText, true);
 
-    // Clear input
     messageInput.value = "";
 
 
-    // Disable button while waiting
     sendBtn.disabled = true;
     sendBtn.textContent = "...";
 
 
     try {
 
-        // Send request to FastAPI
         const response = await fetch("/api/chat", {
 
             method: "POST",
@@ -74,17 +67,14 @@ chatForm.addEventListener("submit", async (e) => {
         });
 
 
-        // Check HTTP response
         if (!response.ok) {
             throw new Error("Server returned an error");
         }
 
 
-        // Convert response to JSON
         const data = await response.json();
 
 
-        // Display AI response
         addMessage(data.response, false);
 
     }
@@ -102,11 +92,9 @@ chatForm.addEventListener("submit", async (e) => {
 
     finally {
 
-        // Enable button again
         sendBtn.disabled = false;
         sendBtn.textContent = "Send";
 
-        // Focus input
         messageInput.focus();
     }
 

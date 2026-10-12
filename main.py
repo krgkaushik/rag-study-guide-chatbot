@@ -11,25 +11,11 @@ from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from google import genai
-
-
-# ============================================================
-# Load environment variables
-# ============================================================
+from google.genai import types
 
 load_dotenv()
 
-
-# ============================================================
-# FastAPI App
-# ============================================================
-
 app = FastAPI(title="Study Guide Chatbot")
-
-
-# ============================================================
-# Templates and Static Files
-# ============================================================
 
 templates = Jinja2Templates(directory="templates")
 
@@ -39,74 +25,36 @@ app.mount(
     name="static"
 )
 
-
-# ============================================================
-# Google Gemini API
-# ============================================================
-
 api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:
-    raise ValueError(
-        "GEMINI_API_KEY environment variable is not set."
-    )
+    raise ValueError("GEMINI_API_KEY environment variable is not set.")
 
 client = genai.Client(api_key=api_key)
 
-
-# ============================================================
-# Chroma Vector Database
-# ============================================================
-
 db_path = "./research_chroma/content/research_chroma"
 
-
-# Embedding model
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
-
-# Load Chroma database
 vector_db = Chroma(
     persist_directory=db_path,
     embedding_function=embedding_model
 )
 
-
-# ============================================================
-# Request Model
-# ============================================================
-
 class ChatRequest(BaseModel):
     message: str
 
-
-# ============================================================
-# Home Page
-# ============================================================
-
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    """
-    Serve the frontend chat interface.
-    """
-
     return templates.TemplateResponse(
         request=request,
         name="index.html"
     )
 
-
-# ============================================================
-# Chat API
-# ============================================================
-
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
-    """
-    Handle user messages and return AI responses.
-    """
 
     user_query = request.message.strip()
 
@@ -117,73 +65,68 @@ async def chat_endpoint(request: ChatRequest):
         }
 
     try:
-
-        # ----------------------------------------------------
-        # 1. Search Chroma database
-        # ----------------------------------------------------
-
         results = vector_db.similarity_search(
             user_query,
-            k=3
+            k=5
         )
-
-
-        # ----------------------------------------------------
-        # 2. Create context
-        # ----------------------------------------------------
 
         context = "\n\n".join(
             result.page_content
             for result in results
         )
 
-
-        # ----------------------------------------------------
-        # 3. Create prompt
-        # ----------------------------------------------------
-
         prompt = f"""
-You are a helpful research assistant.
+You are a helpful and detailed educational research assistant.
 
-Answer the user's question using ONLY the information
-provided in the context below.
+Answer the user's question using ONLY the information provided
+in the context below.
 
-If the answer is not present in the context, say:
+Give a detailed and complete answer.
+Do not give an unnecessarily short answer.
+Explain concepts clearly and step by step when appropriate.
+If the question asks "why", explain the reasoning.
+If the question asks "how", explain the process step by step.
+If the question asks for a definition, provide the definition
+and explain it in simple language.
+Include relevant examples from the context when available.
+Use headings, bullet points, and numbered lists when useful.
+For simple questions, keep the answer reasonably concise.
+For complex questions, provide a detailed explanation.
+Do not repeat information unnecessarily.
+Do not use information that is not present in the context.
+Never invent or assume information.
+
+If the answer cannot be found in the context, say:
 
 "I could not find this information in the provided documents."
 
-Do not make up information.
+Make the answer easy for a student to understand.
 
 Context:
 {context}
 
 Question:
 {user_query}
+
+Provide the most complete educational answer possible based
+strictly on the provided context.
 """
-
-
-        # ----------------------------------------------------
-        # 4. Ask Gemini
-        # ----------------------------------------------------
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=prompt
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                max_output_tokens=1000,
+                temperature=0.7
+            )
         )
-
-
-        # ----------------------------------------------------
-        # 5. Return response
-        # ----------------------------------------------------
 
         return {
             "response": response.text,
             "status": "success"
         }
 
-
     except Exception as e:
-
         print("ERROR:", str(e))
 
         return {
